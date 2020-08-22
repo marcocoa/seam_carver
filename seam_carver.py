@@ -2,17 +2,21 @@
 
 from PIL import Image
 from scipy import ndimage
+from progress.bar import Bar
 import numpy as np
 import argparse
 
 
 def main():
     args = parse_args()
-
     img = Image.open(args["in"])
-    for n in range(args["remove_n_cols"]):
-        print(n)
-        img = vertical_seam_carve(img)
+
+    if args["remove_n_cols"] > 0:
+        with Bar("Removing columns", max=args["remove_n_cols"]) as bar:
+            for _ in range(args["remove_n_cols"]):
+                bar.next()
+                img = vertical_seam_carve(img)
+
     img.save(args["out"])
 
 def parse_args():
