@@ -79,18 +79,20 @@ def vertical_find_seam(energy):
     return seam
 
 def vertical_energy_map(img):
-    grad = compute_grad(img)
+    # compute_grad seems to return an array of float16 which tends to result in
+    # overflow when calculating the energy. Converting it to float64 should make
+    # this much less likely.
+    grad = compute_grad(img).astype("float64")
     rows, cols = len(grad), len(grad[0])
 
-    energy = grad.copy()
     for i in range(1, rows):
         for j in range(0, cols):
             top_row_neighbors = [
-                energy[i-1][j - 1 if j > 0 else j],
-                energy[i-1][j],
-                energy[i-1][j + 1 if j < cols - 1 else j]]
-            energy[i][j] += min(top_row_neighbors)
-    return energy
+                grad[i-1][j - 1 if j > 0 else j],
+                grad[i-1][j],
+                grad[i-1][j + 1 if j < cols - 1 else j]]
+            grad[i][j] += min(top_row_neighbors)
+    return grad
 
 def compute_grad(img):
     # Thank you, StackOverflow
