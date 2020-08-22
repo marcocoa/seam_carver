@@ -17,6 +17,14 @@ def main():
                 bar.next()
                 img = vertical_seam_carve(img)
 
+    if args["remove_n_rows"] > 0:
+        with Bar("Removing rows", max=args["remove_n_rows"]) as bar:
+            img = img.rotate(90, expand=True)
+            for _ in range(args["remove_n_rows"]):
+                bar.next()
+                img = vertical_seam_carve(img)
+            img = img.rotate(-90, expand=True)
+
     img.save(args["out"])
 
 def parse_args():
@@ -25,6 +33,8 @@ def parse_args():
     parser.add_argument("-out", required=True, help="Output image")
     parser.add_argument("-rnc", "--remove-n-cols", type=int, default=0,
         help="Number of columns to remove")
+    parser.add_argument("-rnr", "--remove-n-rows", type=int, default=0,
+        help="Number of rows to remove")
     return vars(parser.parse_args())
 
 def vertical_seam_carve(img):
