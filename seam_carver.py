@@ -25,7 +25,9 @@ def main():
                 img = vertical_seam_carve(img)
             img = img.rotate(-90, expand=True)
 
-    img.save(args["out"])
+    if args["remove_n_cols"] > 0 or args["remove_n_rows"] > 0:
+        img.save(args["out"])
+        print("Image saved to {}".format(args["out"]))
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Seam carve an image")
