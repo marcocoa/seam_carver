@@ -61,21 +61,17 @@ def vertical_seam_carve(img):
 def vertical_find_lowest_energy_seam(energy):
     seam = [np.argmin(energy[-1])]
     for i in reversed(range(len(energy) - 1)):
-        last = seam[-1]
-
-        # pretty gross solution to find the index of the pixel to remove
-        potential_next = (last, energy[i][last])
-        if potential_next[0] - 1 > 0:
-            potential_next2 = (potential_next[0] - 1, energy[i][potential_next[0] - 1])
-            if potential_next2[1] < potential_next[1]:
-                potential_next = potential_next2
-
-        if potential_next[0] + 1 < len(energy[i]):
-            potential_next2 = (potential_next[0] + 1, energy[i][potential_next[0] + 1])
-            if potential_next2[1] < potential_next[1]:
-                potential_next = potential_next2
-        next_pixel = potential_next
-        seam.append(next_pixel[0])
+        last_row_idx = seam[-1]
+        idx, val = last_row_idx, energy[i][last_row_idx]
+        if idx - 1 > 0:
+            l_idx, l_val = idx - 1, energy[i][idx - 1]
+            if l_val < val:
+                idx, val = l_idx, l_val
+        if idx + 1 < len(energy[i]):
+            r_idx, r_val = idx + 1, energy[i][idx + 1]
+            if r_val < val:
+                idx, val = r_idx, r_val
+        seam.append(idx)
     return seam
 
 def vertical_seams(img):
