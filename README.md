@@ -23,7 +23,7 @@ I believe both argparse and PIL are included by default with most python3 instal
 
 
 ## Future goals
-* General speedups; currently a 1280x720 image takes about 2s/seam on my 10th gen Core i7 ultraportable. Python isn't the fastest language around, but I'm sure there are many optimizations that can be made to get the time significantly down.
+* Performance improvements? Currently a 1280x720 image takes about 0.20-0.25s/seam on my 10th gen Core i7 ultraportable. This seems reasonably fast, but I want to know if it can go faster.
     - Implement a `--sloppy` mode that does not recalculate the gradient/energy for each iteration, potentially?
 * Implement adding new seams to make an image larger.
 * Implement masking in order to protect/remove a specific region.
@@ -43,3 +43,13 @@ Results, at least with the current gradient magnitude backend, are ... mixed. So
 But then others like this horizontal carve of a koala look rather awful. Though, to be fair, the image probably lends itself better to a regular crop anyway:
 
 <img src="https://i.imgur.com/Wlrbbxi.jpg" style="zoom:67%;" /> <img src="https://i.imgur.com/hJY1v2W.jpg" style="zoom:67%;" />
+
+
+## Resources and Acknowledgements
+For the idea to use numba:
+* https://karthikkaranth.me/blog/implementing-seam-carving-with-python/
+* https://github.com/andrewdcampbell/seam-carving
+
+StackOverflow and Wikipedia, of course, for general knowledge on numpy, PIL, scipy, seam carving, and more specifically an easy way to calculate gradient magnitude:
+* https://stackoverflow.com/questions/49732726/how-to-compute-the-gradients-of-image-using-python
+* https://en.wikipedia.org/wiki/Seam_carving
