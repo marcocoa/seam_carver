@@ -43,8 +43,8 @@ def vertical_seam_carve(img):
     img_arr = np.asarray(img)
     rows, cols = len(img_arr), len(img_arr[0])
 
-    energy = vertical_energy_map(img)
-    seam = vertical_find_seam(energy)
+    seams = vertical_seams(img)
+    seam = vertical_find_lowest_energy_seam(seams)
 
     # make a copy with one fewer column, since we'll be carving one out
     new_img = np.resize(img_arr, (rows, cols - 1, 3))
@@ -58,7 +58,7 @@ def vertical_seam_carve(img):
                 new_img[i][j] = img_arr[i][j+1]
     return Image.fromarray(new_img)
 
-def vertical_find_seam(energy):
+def vertical_find_lowest_energy_seam(energy):
     seam = [np.argmin(energy[-1])]
     for i in reversed(range(len(energy) - 1)):
         last = seam[-1]
@@ -78,26 +78,29 @@ def vertical_find_seam(energy):
         seam.append(next_pixel[0])
     return seam
 
-def vertical_energy_map(img):
-    # compute_grad seems to return an array of float16 which tends to result in
-    # overflow when calculating the energy. Converting it to float64 should make
-    # this much less likely.
-    grad = compute_grad(img).astype("float64")
-    rows, cols = len(grad), len(grad[0])
+def vertical_seams(img):
+    energy = gradient_magnitude(img)
+    rows, cols = len(energy), len(energy[0])
 
     for i in range(1, rows):
         for j in range(0, cols):
             top_row_neighbors = [
-                grad[i-1][j - 1 if j > 0 else j],
-                grad[i-1][j],
-                grad[i-1][j + 1 if j < cols - 1 else j]]
-            grad[i][j] += min(top_row_neighbors)
-    return grad
+                energy[i-1][j - 1 if j > 0 else j],
+                energy[i-1][j],
+                energy[i-1][j + 1 if j < cols - 1 else j]]
+            energy[i][j] += min(top_row_neighbors)
+    return energy
 
-def compute_grad(img):
+def gradient_magnitude(img):
     # Thank you, StackOverflow
     # https://stackoverflow.com/questions/49732726/how-to-compute-the-gradients-of-image-using-python
-    img_grey = np.asarray(img.convert('L'))
+
+    # img_grey by default seems to be of type uint8, which has two issues:
+    # 1. the resultant grad is of a rather low-precision type, which is prone to
+    #    overflowing when calculating seams
+    # 2. the grad ends up mega wonky and is *not* helpful towards finding good
+    #    seams
+    img_grey = np.asarray(img.convert('L')).astype("float64")
     sx = ndimage.sobel(img_grey, axis=0, mode="constant")
     sy = ndimage.sobel(img_grey, axis=1, mode="constant")
     return np.hypot(sx, sy)
