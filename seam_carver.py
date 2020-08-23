@@ -5,6 +5,7 @@ from scipy import ndimage
 from progress.bar import Bar
 import numpy as np
 import argparse
+import numba
 
 SAVE_ENERGY_MAP = False
 
@@ -47,14 +48,19 @@ def parse_args():
     return vars(parser.parse_args())
 
 def vertical_seam_carve(img):
+    seams = vertical_seams(img)
+    seam = numba.typed.List(vertical_find_lowest_energy_seam(seams))
+
     img_arr = np.asarray(img)
     rows, cols = len(img_arr), len(img_arr[0])
 
-    seams = vertical_seams(img)
-    seam = vertical_find_lowest_energy_seam(seams)
-
     # make a copy with one fewer column, since we'll be carving one out
     new_img = np.resize(img_arr, (rows, cols - 1, 3))
+    return Image.fromarray(vertical_seam_carve_helper(new_img, img_arr, seam))
+
+@numba.jit
+def vertical_seam_carve_helper(new_img, img_arr, seam):
+    rows, cols = len(img_arr), len(img_arr[0])
     for i in range(rows):
         for j in range(cols - 1):
             # remove the pixel on the seam by shifting all pixels to the right
@@ -63,18 +69,20 @@ def vertical_seam_carve(img):
                 new_img[i][j] = img_arr[i][j]
             else:
                 new_img[i][j] = img_arr[i][j+1]
-    return Image.fromarray(new_img)
+    return new_img
 
+@numba.jit
 def vertical_find_lowest_energy_seam(energy):
     seam = [np.argmin(energy[-1])]
-    for i in reversed(range(len(energy) - 1)):
+    cols = len(energy[0])
+    for i in range(len(energy) - 1, 0, -1):
         last_row_idx = seam[-1]
         idx, val = last_row_idx, energy[i][last_row_idx]
         if idx - 1 > 0:
             l_idx, l_val = idx - 1, energy[i][idx - 1]
             if l_val < val:
                 idx, val = l_idx, l_val
-        if idx + 1 < len(energy[i]):
+        if idx + 1 < cols:
             r_idx, r_val = idx + 1, energy[i][idx + 1]
             if r_val < val:
                 idx, val = r_idx, r_val
@@ -83,8 +91,11 @@ def vertical_find_lowest_energy_seam(energy):
 
 def vertical_seams(img):
     energy = gradient_magnitude(img)
-    rows, cols = len(energy), len(energy[0])
+    return vertical_seams_helper(energy)
 
+@numba.jit
+def vertical_seams_helper(energy):
+    rows, cols = len(energy), len(energy[0])
     for i in range(1, rows):
         for j in range(0, cols):
             top_row_neighbors = [
