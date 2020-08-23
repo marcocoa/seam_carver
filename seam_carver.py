@@ -6,10 +6,15 @@ from progress.bar import Bar
 import numpy as np
 import argparse
 
+SAVE_ENERGY_MAP = False
 
 def main():
     args = parse_args()
     img = Image.open(args["in"])
+
+    global SAVE_ENERGY_MAP
+    SAVE_ENERGY_MAP = args["save_energy_map"]
+
 
     if args["remove_n_cols"] > 0:
         with Bar("Removing columns", max=args["remove_n_cols"]) as bar:
@@ -37,6 +42,8 @@ def parse_args():
         help="Number of columns to remove")
     parser.add_argument("-rnr", "--remove-n-rows", type=int, default=0,
         help="Number of rows to remove")
+    parser.add_argument("-sem", "--save-energy-map", action="store_true",
+        help="Save the initial energy map to /tmp/energy.jpg")
     return vars(parser.parse_args())
 
 def vertical_seam_carve(img):
@@ -99,7 +106,14 @@ def gradient_magnitude(img):
     img_grey = np.asarray(img.convert('L')).astype("float64")
     sx = ndimage.sobel(img_grey, axis=0, mode="constant")
     sy = ndimage.sobel(img_grey, axis=1, mode="constant")
-    return np.hypot(sx, sy)
+    grad = np.hypot(sx, sy)
+
+    global SAVE_ENERGY_MAP
+    if SAVE_ENERGY_MAP:
+        SAVE_ENERGY_MAP = False
+        Image.fromarray(grad).convert('L').save("/tmp/energy.jpg")
+
+    return grad
 
 
 if __name__ == "__main__":
