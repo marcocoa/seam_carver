@@ -90,7 +90,15 @@ def vertical_find_lowest_energy_seam(energy):
     return seam
 
 def vertical_seams(img):
-    energy = gradient_magnitude(img)
+    # convert to float64 for great precision against overflow, etc
+    img_grey = np.asarray(img.convert('L')).astype("float64")
+    energy = gradient_magnitude(img_grey)
+
+    global SAVE_ENERGY_MAP
+    if SAVE_ENERGY_MAP:
+        SAVE_ENERGY_MAP = False
+        Image.fromarray(energy).convert('L').save("/tmp/energy.jpg")
+
     return vertical_seams_helper(energy)
 
 @numba.jit
@@ -105,26 +113,12 @@ def vertical_seams_helper(energy):
             energy[i][j] += min(top_row_neighbors)
     return energy
 
-def gradient_magnitude(img):
+def gradient_magnitude(img_grey):
     # Thank you, StackOverflow
     # https://stackoverflow.com/questions/49732726/how-to-compute-the-gradients-of-image-using-python
-
-    # img_grey by default seems to be of type uint8, which has two issues:
-    # 1. the resultant grad is of a rather low-precision type, which is prone to
-    #    overflowing when calculating seams
-    # 2. the grad ends up mega wonky and is *not* helpful towards finding good
-    #    seams
-    img_grey = np.asarray(img.convert('L')).astype("float64")
     sx = ndimage.sobel(img_grey, axis=0, mode="constant")
     sy = ndimage.sobel(img_grey, axis=1, mode="constant")
-    grad = np.hypot(sx, sy)
-
-    global SAVE_ENERGY_MAP
-    if SAVE_ENERGY_MAP:
-        SAVE_ENERGY_MAP = False
-        Image.fromarray(grad).convert('L').save("/tmp/energy.jpg")
-
-    return grad
+    return np.hypot(sx, sy)
 
 
 if __name__ == "__main__":
